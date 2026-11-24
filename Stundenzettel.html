@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <title>Stundennachweis</title>
+  <script src="https://unpkg.com"></script>
+  <style>
+    :root { --primary: #1a56db; --bg: #f3f4f6; --card: #ffffff; --text: #111827; --border: #d1d5db; --danger: #dc2626; }
+    * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { margin: 0; background: var(--bg); color: var(--text); padding: 14px; padding-bottom: 50px; }
+    h1 { font-size: 1.3rem; margin: 0 0 12px 0; text-align: center; }
+    h2 { font-size: 1.05rem; margin: 0 0 10px 0; border-bottom: 1px solid #eee; padding-bottom: 6px; }
+    .card { background: var(--card); border-radius: 12px; padding: 14px; margin-bottom: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+    label { display: block; font-size: 0.78rem; font-weight: 600; color: #374151; margin-bottom: 4px; }
+    input { width: 100%; padding: 9px 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 0.95rem; background: #fff; }
+    input:focus { outline: none; border-color: var(--primary); }
+    button { width: 100%; padding: 12px; border: none; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; margin-top: 8px; }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-success { background: #059669; color: #fff; }
+    .btn-outline { background: #eef2ff; color: var(--primary); border: 1px solid #c7d2fe; font-size: 0.85rem; padding: 8px; }
+    .btn-danger { background: #fee2e2; color: var(--danger); width: auto; padding: 5px 10px; font-size: 0.8rem; margin: 0; }
+    .status { font-size: 0.82rem; padding: 8px; border-radius: 6px; margin-top: 8px; background: #ecfdf5; color: #065f46; word-break: break-word; }
+    .status.warn { background: #fef3c7; color: #92400e; }
+    .entry-item { border-bottom: 1px solid #eee; padding: 10px 0; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+    .entry-item:last-child { border-bottom: none; }
+    .entry-info { font-size: 0.88rem; line-height: 1.35; }
+    .entry-sub { font-size: 0.78rem; color: #6b7280; }
+    .summary { display: flex; justify-content: space-around; background: #eff6ff; padding: 10px; border-radius: 8px; margin-bottom: 10px; font-size: 0.88rem; text-align: center; }
+    .summary strong { display: block; font-size: 1.1rem; color: var(--primary); }
+  </style>
+</head>
+<body>
+
+  <h1>Stundennachweis</h1>
+
+  <!-- 1. PDF-Vorlage & Stammdaten -->
+  <div class="card">
+    <h2>1. Stammdaten & Firmen-PDF</h2>
+    <div style="margin-bottom: 10px;">
+      <label>Leeres Firmen-PDF (einmalig im WLAN auswählen)</label>
+      <input type="file" id="pdfUpload" accept="application/pdf,.pdf" onchange="handleFileSelect(this)" />
+      <div id="pdfStatus" class="status warn">Noch kein PDF geladen.</div>
+    </div>
+    <div class="grid-2" style="margin-bottom: 8px;">
+      <div>
+        <label>Name</label>
+        <input type="text" id="empName" placeholder="Vorname Nachname" oninput="saveMeta()" />
+      </div>
+      <div>
+        <label>Monat / Jahr</label>
+        <input type="text" id="monthYear" placeholder="z. B. 11/2026" oninput="saveMeta()" />
+      </div>
+    </div>
+    <div class="grid-2">
+      <div>
+        <label>Km Monatsanfang</label>
+        <input type="number" id="kmStart" placeholder="optional" oninput="saveMeta()" />
+      </div>
+      <div>
+        <label>Km Monatsende</label>
+        <input type="number" id="kmEnd" placeholder="optional" oninput="saveMeta()" />
+      </div>
+    </div>
+    <div style="margin-top: 8px;">
+      <label>Firmen-E-Mail</label>
+      <input type="email" id="companyEmail" placeholder="buero@firma.de" oninput="saveMeta()" />
+    </div>
+  </div>
+
+  <!-- 2. Neuer Eintrag -->
+  <div class="card">
+    <h2>2. Einsatz eintragen</h2>
+    <div class="grid-2" style="margin-bottom: 8px;">
+      <div>
+        <label>Datum</label>
+        <input type="date" id="inDate" />
+      </div>
+      <div>
+        <label>Klient</label>
+        <input type="text" id="inClient" placeholder="Name des Klienten" />
+      </div>
+    </div>
+    <div class="grid-2" style="margin-bottom: 8px;">
+      <div>
+        <label>Ankunft Zeit</label>
+        <input type="time" id="inStart" />
+      </div>
+      <div>
+        <label>Abfahrt Zeit</label>
+        <input type="time" id="inEnd" />
+      </div>
+    </div>
+    <div class="grid-3" style="margin-bottom: 8px;">
+      <div>
+        <label>Kunden KM</label>
+        <input type="number" step="0.1" id="inClientKm" placeholder="0" />
+      </div>
+      <div>
+        <label>Heimfahrt KM</label>
+        <input type="number" step="0.1" id="inHomeKm" placeholder="0" />
+      </div>
+      <div>
+        <label>Pause (Min.)</label>
+        <input type="number" id="inBreak" placeholder="0" />
+      </div>
+    </div>
+    <div>
+      <label>Bemerkungen</label>
+      <input type="text" id="inNotes" placeholder="Optional" />
+    </div>
+    <button class="btn-primary" onclick="addEntry()">+ Eintrag hinzufügen</button>
+  </div>
+
+  <!-- 3. Übersicht & Export -->
+  <div class="card">
+    <h2>3. Erfasste Einträge (<span id="count">0</span>)</h2>
+    <div class="summary">
+      <div><strong id="sumHours">0,0 h</strong>Arbeitszeit</div>
+      <div><strong id="sumKm">0 km</strong>Gesamt-KM</div>
+      <div><strong id="sumPages">1</strong>PDF-Seiten</div>
+    </div>
+    <div id="entryList"></div>
+
+    <button class="btn-success" onclick="exportAndSharePDF()">PDF erstellen & per Mail senden</button>
+    <button class="btn-outline" onclick="clearMonth()">Neuen Monat starten (Einträge leeren)</button>
+  </div>
+
+<script>
+  const STORAGE_KEY = 'stundenzettel_offline_v1';
+  const PDF_B64_KEY = 'stundenzettel_pdf_offline_v1';
+  let currentPdfBytes = null;
+
+  let state = {
+    meta: { empName: '', monthYear: '', kmStart: '', kmEnd: '', companyEmail: '' },
+    entries: []
+  };
+
+  // Offline-Cache per Service Worker registrieren (für Funklöcher auf dem Land)
+  if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+    const swCode = `
+      const CACHE = 'stundenzettel-cache-v1';
+      const ASSETS = [location.href, 'https://unpkg.com'];
+      self.addEventListener('install', e => {
+        e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting()));
+      });
+      self.addEventListener('fetch', e => {
+        e.respondWith(caches.match(e.request).then(r => r || fetch(e.request)));
+      });
+    `;
+    const swBlob = new Blob([swCode], { type: 'application/javascript' });
+    navigator.serviceWorker.register(URL.createObjectURL(swBlob)).catch(() => {});
+  }
+
+  function setStatus(text, isOk) {
+    const st = document.getElementById('pdfStatus');
+    st.textContent = text;
+    st.className = isOk ? 'status' : 'status warn';
+  }
+
+  function arrayBufferToBase64(buffer) {
+    let binary = '';
+    const bytes = new Uint8Array(buffer);
+    for (let i = 0; i < bytes.byteLength; i++) {
+      binary += String.fromCharCode(bytes.at(i));
+    }
+    return window.btoa(binary);
+  }
+
+  function base64ToArrayBuffer(base64) {
+    const binary = window.atob(base64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+      bytes.set([binary.charCodeAt(i)], i);
+    }
+    return bytes.buffer;
+  }
+
+  function handleFileSelect(input) {
+    if (!input.files || input.files.length === 0) return;
+    const file = input.files.item(0);
+    const reader = new FileReader();
+    reader.onload = function(evt) {
+      currentPdfBytes = evt.target.result;
+      try {
+        const b64 = arrayBufferToBase64(currentPdfBytes);
+        localStorage.setItem(PDF_B64_KEY, JSON.stringify({ name: file.name, b64: b64 }));
+      } catch (e) {}
+      setStatus('✓ "' + file.name + '" offline gespeichert & bereit!', true);
+    };
+    reader.readAsArrayBuffer(file);
+  }
+
+  window.onload = function() {
+    document.getElementById('inDate').valueAsDate = new Date();
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        state = JSON.parse(saved);
+        document.getElementById('empName').value = state.meta.empName || '';
+        document.getElementById('monthYear').value = state.meta.monthYear || '';
+        document.getElementById('kmStart').value = state.meta.kmStart || '';
+        document.getElementById('kmEnd').value = state.meta.kmEnd || '';
+        document.getElementById('companyEmail').value = state.meta.companyEmail || '';
+      } else {
+        const now = new Date();
+        const mm = String(now.getMonth() + 1).padStart(2, '0');
+        document.getElementById('monthYear').value = mm + '/' + now.getFullYear();
+        saveMeta();
+      }
+
+      const savedPdf = localStorage.getItem(PDF_B64_KEY);
+      if (savedPdf) {
+        const parsed = JSON.parse(savedPdf);
+        currentPdfBytes = base64ToArrayBuffer(parsed.b64);
+        setStatus('✓ "' + parsed.name + '" offline bereit!', true);
+      }
+    } catch (e) {}
+    renderEntries();
+  };
+
+  function saveMeta() {
+    state.meta = {
+      empName: document.getElementById('empName').value,
+      monthYear: document.getElementById('monthYear').value,
+      kmStart: document.getElementById('kmStart').value,
+      kmEnd: document.getElementById('kmEnd').value,
+      companyEmail: document.getElementById('companyEmail').value
+    };
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) {}
+  }
+
+  function addEntry() {
